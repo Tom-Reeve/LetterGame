@@ -140,6 +140,7 @@ const settings = {
     plays: 5,
     discards: 5,
     lettersPerDiscard: 3,
+    lettersPerHand: 16,
 
     maxWordLength: 7,
     minWordLength: 4,

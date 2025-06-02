@@ -2,6 +2,7 @@ const startButton = document.getElementById("startButton");
 const pages = document.querySelectorAll(".page");
 
 let wordList = [];
+let game;
 
 const URL = "https://raw.githubusercontent.com/dwyl/english-words/refs/heads/master/words_alpha.txt";
 async function fetchText(url) {
@@ -24,4 +25,7 @@ fetchText(URL);
 function newGame() {
     pages[0].style.display = "none";
     pages[1].style.display = "flex";
+
+    game = new Game(settings, rewards, letterBag, wordList);
+    game.nextLevel();
 }
