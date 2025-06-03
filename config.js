@@ -1,5 +1,5 @@
 const letterBag = {
-    BLANK: {
+    "*": {
         count: 2,
         chips: 0,
         mult: 0,

@@ -3,9 +3,10 @@ class Game {
         this.settings = settings;
         this.rewards = rewards;
 
+        this.letterBag = letterBag;
         this.gameLetterBag = structuredClone(letterBag);
         this.currentLetterSelection = [];
-        this.currentWord = [];
+        this.currentWord;
         this.wordList = wordList;
         
         this.level = 0;
@@ -63,13 +64,108 @@ class Game {
         }
     }
     checkKeysPressed() {
-        document.addEventListener('keydown', (event) => {
+        document.addEventListener("keydown", (event) => {
             let keyName = event.key.toUpperCase();
+
+            if (keyName === "BACKSPACE") {
+                this.removeLastLetter();
+            } if (keyName === "ENTER") {
+                this.checkWord();
+            } else {
+                this.addLetterToWord(keyName, false);
+            }
         });
     }
-    addLetterToWord(letter) {
+    addLetterToWord(letterToAdd, fromClick) {
+        let lettersInBagWrapper = document.querySelectorAll(".letterTile");
+        let lettersInWord = document.querySelectorAll(".letterBoxWrapper");
+
+        for (let i = 0 ; i < lettersInBagWrapper.length ; i++) {
+            let letterDiv = lettersInBagWrapper[i];
+            let bagLetter = letterDiv.name;
+            if (this.currentWord.length < this.settings.maxWordLength) {
+                if (letterToAdd === bagLetter) {
+                    if (!letterDiv.used) {
+                        let lettersUsed = this.currentWord.length;
+                        lettersInWord[lettersUsed].children[2].textContent = letterToAdd;
+                        lettersInWord[lettersUsed].children[2].name = letterToAdd;
+                        this.currentWord += letterToAdd;
+                        if (!fromClick) {
+                            letterDiv.used = true;
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+        document.querySelectorAll(".letterBoxWrapper")[3].children[2];
     }
     removeLastLetter() {
+        let word = this.currentWord;
+        let wordLength = word.length;
+        if (wordLength === 0) {
+            return;
+        }
+
+        let lettersInWord = document.querySelectorAll(".letterBoxWrapper");
+        let lastLetterBox = lettersInWord[wordLength - 1].children[2];
+        let letterToRemove = lastLetterBox.name;
+
+        lastLetterBox.textContent = "";
+        this.currentWord = word.substring(0, wordLength - 1);
+
+        let lettersInBagWrapper = document.querySelectorAll(".letterTile");
+        for (let i = 0 ; i < lettersInBagWrapper.length ; i++) {
+            let currentLetter = lettersInBagWrapper[i];
+            if (currentLetter.name === letterToRemove) {
+                if (currentLetter.used) {
+                    currentLetter.used = false;
+                    return;
+                }
+            }
+        }
+    }
+    checkWord() {
+        let enteredWord = this.currentWord.toLowerCase();
+        if (!this.wordList.includes(enteredWord)) {
+            return;
+        }
+        let lowerCase = [];
+        for (let i = 0 ; i < this.currentLetterSelection.length ; i++) {
+            lowerCase.push(this.currentLetterSelection[i].toLowerCase());
+        }
+        let longest = this.getLongestWord(this.wordList, lowerCase);
+    }
+    getLetterCounts(str) {
+        const count = {};
+        for (const char of str) {
+            count[char] = (count[char] || 0) + 1;
+        }
+        return count;
+    }
+    canMakeWord(word, letterCounts) {
+        const wordCounts = this.getLetterCounts(word);
+        for (const char in wordCounts) {
+            if (!letterCounts[char] || wordCounts[char] > letterCounts[char]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    getLongestWord(words, letters) {
+        const available = this.getLetterCounts(letters);
+        let longest = '';
+        let maxLength = this.settings.maxWordLength;
+
+        for (const word of words) {
+            if (word.length > maxLength) {
+                continue;
+            } if (this.canMakeWord(word, available) && word.length > longest.length) {
+                longest = word;
+            }
+        }
+
+        return longest;
     }
     setUpLetterBag() {
         let lettersPerHand = this.settings.lettersPerHand;
@@ -92,11 +188,20 @@ class Game {
             letterTile.name = tileValue[0];
             letterTile.chips = tileValue[1];
             letterTile.mult = tileValue[2];
+            letterTile.used = false;
             this.currentLetterSelection.push(tileValue[0]);
 
             letterTile.textContent = letterTile.name;
             letterChips.textContent = letterTile.chips;
             letterMult.textContent = letterTile.mult;
+
+            letterTile.addEventListener("click", (event) => {
+                let clickedTile = event.currentTarget;
+                if (!clickedTile.used) {
+                    this.addLetterToWord(clickedTile.name, true);
+                }
+                clickedTile.used = true;
+            });
 
             letterBag.appendChild(letterTileWrapper);
             letterTileWrapper.appendChild(letterTile);
