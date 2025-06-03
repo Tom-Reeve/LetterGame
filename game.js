@@ -135,6 +135,7 @@ class Game {
             lowerCase.push(this.currentLetterSelection[i].toLowerCase());
         }
         let longest = this.getLongestWord(this.wordList, lowerCase);
+        alert(longest);
     }
     getLetterCounts(str) {
         const count = {};
@@ -154,18 +155,15 @@ class Game {
     }
     getLongestWord(words, letters) {
         const available = this.getLetterCounts(letters);
-        let longest = '';
         let maxLength = this.settings.maxWordLength;
 
+        let validWords = [];
         for (const word of words) {
-            if (word.length > maxLength) {
-                continue;
-            } if (this.canMakeWord(word, available) && word.length > longest.length) {
-                longest = word;
+            if (this.canMakeWord(word, available) && word.length === maxLength) {
+                validWords.push(word);
             }
         }
-
-        return longest;
+        return validWords[Math.floor(Math.random() * validWords.length)];
     }
     setUpLetterBag() {
         let lettersPerHand = this.settings.lettersPerHand;
