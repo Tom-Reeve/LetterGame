@@ -9,6 +9,10 @@ class Game {
         this.currentWord;
         this.wordList = wordList;
         
+        this.chips = 0;
+        this.mult = 1;
+        this.lengthMult = 0;
+
         this.level = 0;
         this.requiredScore = 0;
 
@@ -90,6 +94,7 @@ class Game {
                         lettersInWord[lettersUsed].children[2].textContent = letterToAdd;
                         lettersInWord[lettersUsed].children[2].name = letterToAdd;
                         this.currentWord += letterToAdd;
+                        this.addLetterScore(letterToAdd);
                         if (!fromClick) {
                             letterDiv.used = true;
                         }
@@ -99,6 +104,36 @@ class Game {
             }
         }
         document.querySelectorAll(".letterBoxWrapper")[3].children[2];
+    }
+    addLetterScore(letter) {
+        let currentWordLength = this.currentWord.length - 1;
+
+        let letterDivs = document.querySelectorAll(".letterBoxWrapper")[currentWordLength];
+        let scoreDivs = letterDivs.children;
+
+        let letterChips = this.letterBag[letter].chips;
+        let letterMult = this.letterBag[letter].mult;
+        this.chips += letterChips;
+        this.mult += letterMult;
+        this.lengthMult = currentWordLength + 1;
+
+        scoreDivs[0].textContent = letterChips;
+        scoreDivs[4].textContent = letterMult;
+
+        this.setScoring();
+    }
+    setScoring() {
+        let totalChips = document.getElementById("totalChips");
+        let totalMult = document.getElementById("totalMult");
+        let finalMult = document.getElementById("finalMult");
+        let finalScore = document.getElementById("totalScore");
+
+        totalChips.textContent = this.chips;
+        totalMult.textContent = this.mult;
+        finalMult.textContent = this.lengthMult;
+
+        let score = this.chips * this.mult * this.lengthMult;
+        finalScore.textContent = score;
     }
     removeLastLetter() {
         let word = this.currentWord;
@@ -114,6 +149,17 @@ class Game {
         lastLetterBox.textContent = "";
         this.currentWord = word.substring(0, wordLength - 1);
 
+        lettersInWord[wordLength - 1].children[0].textContent = "";
+        lettersInWord[wordLength - 1].children[4].textContent = "";
+
+        let letterToRemoveChips = this.letterBag[letterToRemove].chips;
+        let letterToRemoveMult = this.letterBag[letterToRemove].mult;
+        this.chips -= letterToRemoveChips;
+        this.mult -= letterToRemoveMult;
+        this.lengthMult--;
+
+        this.setScoring();
+
         let lettersInBagWrapper = document.querySelectorAll(".letterTile");
         for (let i = 0 ; i < lettersInBagWrapper.length ; i++) {
             let currentLetter = lettersInBagWrapper[i];
@@ -127,7 +173,8 @@ class Game {
     }
     checkWord() {
         let enteredWord = this.currentWord.toLowerCase();
-        if (!this.wordList.includes(enteredWord)) {
+        if (!this.matchPattern(enteredWord)) {
+            alert("NOT A REAL WORD")
             return;
         }
         let lowerCase = [];
@@ -137,6 +184,13 @@ class Game {
         let longest = this.getLongestWord(this.wordList, lowerCase);
         alert(longest);
     }
+    matchPattern(pattern) {
+        const regexPattern = '^' + pattern.replace(/\*/g, '.') + '$';
+        const regex = new RegExp(regexPattern);
+
+        return this.wordList.filter(word => regex.test(word));
+    }
+
     getLetterCounts(str) {
         const count = {};
         for (const char of str) {
@@ -159,7 +213,7 @@ class Game {
 
         let validWords = [];
         for (const word of words) {
-            if (this.canMakeWord(word, available) && word.length <= maxLength) {
+            if (this.canMakeWord(word, available) && word.length === maxLength) {
                 validWords.push(word);
             }
         }

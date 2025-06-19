@@ -78,10 +78,18 @@
 
     width: 100px;
     height: 25px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background-color: lightblue;
 }
 .multCounter {
     position: absolute;
     bottom: 0;
+
+    background-color: red;
 }
 .letterBox {
     outline: 1px solid;
