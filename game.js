@@ -292,8 +292,6 @@ class Game {
 /*
 TO DO
 
-- Display chips and mult for entered word, if valid
-- Calcuate final score of word
 - Discard mechanic
 - Display round goal, hands, discards
 - Check if round goal passed
