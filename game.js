@@ -177,47 +177,57 @@ class Game {
             alert("NOT A REAL WORD")
             return;
         }
-        let lowerCase = [];
-        for (let i = 0 ; i < this.currentLetterSelection.length ; i++) {
-            lowerCase.push(this.currentLetterSelection[i].toLowerCase());
+        alert("WORD ENTERED");
+        console.log(this.getHighestScoringWord());
+    }
+    getHighestScoringWord() {
+        let highestScore = {
+            word: "",
+            score: 0,
+            chips: [],
         }
-        let longest = this.getLongestWord(this.wordList, lowerCase);
-        alert(longest);
+
+        for (let i = 0 ; i < this.wordList.length ; i++) {
+            let word = this.wordList[i].toUpperCase();
+            if (!this.canMakeWord(word) || word.length > this.settings.maxWordLength) {
+                continue;
+            }
+            let letters = word.split("");
+            let chips = 0;
+            let mult = 1;
+            for (let j = 0 ; j < letters.length ; j++) {
+                chips += this.letterBag[letters[j]].chips;
+                mult += this.letterBag[letters[j]].mult;
+            }
+            let score = chips * mult * (word.length + 1);
+            if (score > highestScore.score) {
+                highestScore.score = score;
+                highestScore.word = this.wordList[i];
+                highestScore.chips = [chips, mult, word.length + 1]
+            }
+        }
+        return highestScore;
+    }
+    canMakeWord(word) {
+        let letters = word.split("");
+        let availableLetters = structuredClone(this.currentLetterSelection);
+        for (let i = 0 ; i < letters.length ; i++) {
+            if (!availableLetters.includes(letters[i]) && !availableLetters.includes("*")) {
+                return false;
+            } else {
+                let index = availableLetters.indexOf(letters[i]);
+
+                index = index > -1 ? index : availableLetters.indexOf("*");
+                availableLetters.splice(index, 1);
+            }
+        }
+        return true;
     }
     matchPattern(pattern) {
         const regexPattern = '^' + pattern.replace(/\*/g, '.') + '$';
         const regex = new RegExp(regexPattern);
 
         return this.wordList.filter(word => regex.test(word));
-    }
-
-    getLetterCounts(str) {
-        const count = {};
-        for (const char of str) {
-            count[char] = (count[char] || 0) + 1;
-        }
-        return count;
-    }
-    canMakeWord(word, letterCounts) {
-        const wordCounts = this.getLetterCounts(word);
-        for (const char in wordCounts) {
-            if (!letterCounts[char] || wordCounts[char] > letterCounts[char]) {
-                return false;
-            }
-        }
-        return true;
-    }
-    getLongestWord(words, letters) {
-        const available = this.getLetterCounts(letters);
-        let maxLength = this.settings.maxWordLength;
-
-        let validWords = [];
-        for (const word of words) {
-            if (this.canMakeWord(word, available) && word.length === maxLength) {
-                validWords.push(word);
-            }
-        }
-        return validWords[Math.floor(Math.random() * validWords.length)];
     }
     setUpLetterBag() {
         let lettersPerHand = this.settings.lettersPerHand;
