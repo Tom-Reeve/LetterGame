@@ -159,7 +159,7 @@ class Game {
 
         let validWords = [];
         for (const word of words) {
-            if (this.canMakeWord(word, available) && word.length === maxLength) {
+            if (this.canMakeWord(word, available) && word.length <= maxLength) {
                 validWords.push(word);
             }
         }
