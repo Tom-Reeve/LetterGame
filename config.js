@@ -1,6 +1,6 @@
 const letterBag = {
     "*": {
-        count: 2,
+        count: 0,
         chips: 0,
         mult: 0,
     },

@@ -41,6 +41,7 @@ class Game {
         this.settings.plays = this.settingsOriginal.plays;
         document.getElementById("requiredScore").textContent = this.requiredScore;
         document.getElementById("score").textContent = this.score;
+        document.getElementById("round").textContent = this.level
     }
     upgradeRandomLetters() {
         let letters = Object.values(this.letterBag);
@@ -220,8 +221,8 @@ class Game {
         if (enteredWord.length === 0) {
             return;
         }
-        enteredWord = enteredWord.toLowerCase();
-        if (!this.matchPattern(enteredWord)) {
+        enteredWord = enteredWord.toUpperCase();
+        if (!this.canMakeWord(enteredWord) && !this.wordList.includes(enteredWord)) {
             alert("NOT A REAL WORD")
             return;
         }
@@ -290,12 +291,6 @@ class Game {
             }
         }
         return true;
-    }
-    matchPattern(pattern) {
-        const regexPattern = '^' + pattern.replace(/\*/g, '.') + '$';
-        const regex = new RegExp(regexPattern);
-
-        return this.wordList.filter(word => regex.test(word));
     }
     setUpLetterBag() {
         let lettersPerHand = this.settings.lettersPerHand;
@@ -376,7 +371,9 @@ TO DO
 
 - Discard mechanic
 - Display round goal, hands, discards
-- Check if round goal passed
 - Upgrade menu and effects
 - Restart mechanic
+- Check for wildcards (currently removed from bag)
+- View which letters are upgraded
+- View entire letter bag
 */
