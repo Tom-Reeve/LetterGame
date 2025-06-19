@@ -1,6 +1,7 @@
 class Game {
     constructor(settings, rewards, letterBag, wordList) {
-        this.settings = settings;
+        this.settingsOriginal = settings;
+        this.settings = structuredClone(settings);
         this.rewards = rewards;
 
         this.letterBag = letterBag;
@@ -15,25 +16,65 @@ class Game {
 
         this.level = 0;
         this.requiredScore = 0;
+        this.score = 0;
 
         this.hasEnteredWord = false;
+        this.checkKeysPressed();
     }
     getRequiredScore(level) {
-        return 2 ** (level - 1);
+        return Math.floor(1.5 ** (level + 5));
     }
     nextLevel() {
         this.level++;
         this.currentLetterSelection = [];
         this.currentWord = [];
         this.requiredScore = this.getRequiredScore(this.level);
+        this.score = 0;
+
+        this.upgradeRandomLetters();
+        this.gameLetterBag = structuredClone(this.letterBag);
 
         this.setUpLetterBoxes();
         this.setUpLetterBag();
-        this.checkKeysPressed();
+
+        document.getElementById("remainingHands").textContent = this.settingsOriginal.plays;
+        this.settings.plays = this.settingsOriginal.plays;
+        document.getElementById("requiredScore").textContent = this.requiredScore;
+        document.getElementById("score").textContent = this.score;
+    }
+    upgradeRandomLetters() {
+        let letters = Object.values(this.letterBag);
+        let improved = [];
+
+        let randomCount = Math.floor(Math.random() * 3) + 1;
+        for (let i = 0 ; i < randomCount ; i++) {
+            let randomIndex = Math.floor(Math.random() * letters.length);
+            let randomLetter = Object.keys(this.letterBag)[randomIndex];
+
+            let randomIncrease = Math.floor(Math.random() * 5) + 1;
+            let chipsIncrease = Math.random() < 0.75 ? true : false;
+
+            if (chipsIncrease) {
+                this.letterBag[randomLetter].chips += randomIncrease;
+            } else {
+                this.letterBag[randomLetter].mult += randomIncrease;
+            }
+            let improvedArray = [{
+                "Letter": randomLetter, 
+                "Increased By": randomIncrease, 
+                "Chips?": chipsIncrease,
+            }];
+            improved.push(improvedArray);
+        }
+        console.log(improved);
     }
     setUpLetterBoxes() {
         let maxWordLength = this.settings.maxWordLength;
         let letterBoxContainer = document.getElementById("letterBoxContainerSmall");
+
+        while (letterBoxContainer.firstChild) {
+            letterBoxContainer.removeChild(letterBoxContainer.firstChild);
+        }
 
         for (let i = 0 ; i < maxWordLength ; i++) {
             let letterBoxWrapper = document.createElement("div");
@@ -132,8 +173,11 @@ class Game {
         totalMult.textContent = this.mult;
         finalMult.textContent = this.lengthMult;
 
-        let score = this.chips * this.mult * this.lengthMult;
+        let score = this.getScore();
         finalScore.textContent = score;
+    }
+    getScore() {
+        return this.chips * this.mult * this.lengthMult;
     }
     removeLastLetter() {
         let word = this.currentWord;
@@ -172,13 +216,37 @@ class Game {
         }
     }
     checkWord() {
-        let enteredWord = this.currentWord.toLowerCase();
+        let enteredWord = this.currentWord;
+        if (enteredWord.length === 0) {
+            return;
+        }
+        enteredWord = enteredWord.toLowerCase();
         if (!this.matchPattern(enteredWord)) {
             alert("NOT A REAL WORD")
             return;
         }
-        alert("WORD ENTERED");
+        this.updateScore();
         console.log(this.getHighestScoringWord());
+    }
+    updateScore() {
+        let score = this.getScore();
+        this.score += score;
+        document.getElementById("score").textContent = this.score;
+        this.settings.plays--;
+        document.getElementById("remainingHands").textContent = this.settings.plays;
+
+        while (this.currentWord.length > 0) {
+            this.removeLastLetter();
+        }
+
+        this.chips = 0;
+        this.mult = 1;
+        this.lengthMult = 0;
+
+        this.setUpLetterBag();
+        if (this.score > this.requiredScore) {
+            this.nextLevel();
+        }
     }
     getHighestScoringWord() {
         let highestScore = {
@@ -232,6 +300,10 @@ class Game {
     setUpLetterBag() {
         let lettersPerHand = this.settings.lettersPerHand;
         let letterBag = document.getElementById("letterBag");
+
+        while (letterBag.firstChild) {
+            letterBag.removeChild(letterBag.firstChild);
+        }
 
         for (let i = 0 ; i < lettersPerHand ; i++) {
             let letterTileWrapper = document.createElement("div");
