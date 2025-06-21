@@ -19,6 +19,7 @@ class Game {
         this.score = 0;
 
         this.hasEnteredWord = false;
+        this.isGameOver = false;
         this.checkKeysPressed();
     }
     getRequiredScore(level) {
@@ -61,13 +62,13 @@ class Game {
                 this.letterBag[randomLetter].mult += randomIncrease;
             }
             let improvedArray = [{
-                "Letter": randomLetter, 
-                "Increased By": randomIncrease, 
-                "Chips?": chipsIncrease,
+                "letter": randomLetter, 
+                "increasedBy": randomIncrease, 
+                "chip": chipsIncrease,
             }];
             improved.push(improvedArray);
         }
-        console.log(improved);
+        this.displayInfo(improved);
     }
     setUpLetterBoxes() {
         let maxWordLength = this.settings.maxWordLength;
@@ -147,6 +148,19 @@ class Game {
         }
         document.querySelectorAll(".letterBoxWrapper")[3].children[2];
     }
+    displayInfo(upgradedLetters) {
+        let text = "";
+        for (let i = 0 ; i < upgradedLetters.length ; i++) {
+            let letter = upgradedLetters[i][0].letter;
+            let increase = upgradedLetters[i][0].increasedBy;
+            let chips = upgradedLetters[i][0].chip;
+
+            let variable = chips ? "chips" : "mult";
+
+            text += "The " + variable + " of " + letter.toUpperCase() + " has increased by " + increase + "\n\n";
+        }
+        alert(text);
+    }
     addLetterScore(letter) {
         let currentWordLength = this.currentWord.length - 1;
 
@@ -218,16 +232,29 @@ class Game {
     }
     checkWord() {
         let enteredWord = this.currentWord;
-        if (enteredWord.length === 0) {
+        if (enteredWord.length === 0 || this.isGameOver) {
             return;
         }
         enteredWord = enteredWord.toUpperCase();
-        if (!this.canMakeWord(enteredWord) && !this.wordList.includes(enteredWord)) {
+        if (!this.canMakeWord(enteredWord) || !this.patternMatchesArray(enteredWord)) {
             alert("NOT A REAL WORD")
             return;
         }
+        this.getHighestScoringWord();
         this.updateScore();
-        console.log(this.getHighestScoringWord());
+    }
+    patternMatchesArray(pattern) {
+        // Escape regex special characters except for '*'
+        pattern = pattern.toLowerCase();
+        const escapedPattern = pattern.replace(/[-/\\^$+?.()|[\]{}]/g, '\\$&');
+        
+        // Replace '*' with '.' (matches exactly one character in regex)
+        const regexPattern = '^' + escapedPattern.replace(/\*/g, '.') + '$';
+        
+        const regex = new RegExp(regexPattern);
+
+        // Check if any word matches the pattern
+        return this.wordList.some(word => regex.test(word));
     }
     updateScore() {
         let score = this.getScore();
@@ -235,6 +262,11 @@ class Game {
         document.getElementById("score").textContent = this.score;
         this.settings.plays--;
         document.getElementById("remainingHands").textContent = this.settings.plays;
+
+        if (this.settings.plays === 0 && this.score < this.requiredScore) {
+            this.gameOver();
+            return;
+        }
 
         while (this.currentWord.length > 0) {
             this.removeLastLetter();
@@ -245,22 +277,29 @@ class Game {
         this.lengthMult = 0;
 
         this.setUpLetterBag();
-        if (this.score > this.requiredScore) {
+        if (this.score >= this.requiredScore) {
             this.nextLevel();
         }
+    }
+    gameOver() {
+        this.isGameOver = true;
+        alert("Game Over");
     }
     getHighestScoringWord() {
         let highestScore = {
             word: "",
+            wordFromList: "",
             score: 0,
             chips: [],
         }
 
         for (let i = 0 ; i < this.wordList.length ; i++) {
             let word = this.wordList[i].toUpperCase();
-            if (!this.canMakeWord(word) || word.length > this.settings.maxWordLength) {
+            let canMakeWord = this.canMakeWord(word);
+            if (!canMakeWord || word.length > this.settings.maxWordLength) {
                 continue;
             }
+            /*
             let letters = word.split("");
             let chips = 0;
             let mult = 1;
@@ -273,13 +312,36 @@ class Game {
                 highestScore.score = score;
                 highestScore.word = this.wordList[i];
                 highestScore.chips = [chips, mult, word.length + 1]
+            }*/
+           
+            let chips = 0;
+            let mult = 1;
+            for (let j = 0 ; j < canMakeWord.length ; j++) {
+                chips += this.letterBag[canMakeWord[j]].chips;
+                mult += this.letterBag[canMakeWord[j]].mult;
+            }
+            let score = chips * mult * word.length;
+            if (score > highestScore.score) {
+                highestScore.score = score;
+                highestScore.word = canMakeWord.join("");
+                highestScore.wordFromList = this.wordList[i];
+                highestScore.chips = [chips, mult, word.length]
             }
         }
-        return highestScore;
+        this.displayBestWord(highestScore);
+    }
+    displayBestWord(wordScore) {
+        let text = "";
+
+        text += "The highest scoring word that round was " + wordScore.word + " or " + wordScore.wordFromList + "\n\n" +
+                "This word scored " + wordScore.score;
+
+        alert(text);
     }
     canMakeWord(word) {
         let letters = word.split("");
         let availableLetters = structuredClone(this.currentLetterSelection);
+        let usedLetters = [];
         for (let i = 0 ; i < letters.length ; i++) {
             if (!availableLetters.includes(letters[i]) && !availableLetters.includes("*")) {
                 return false;
@@ -287,14 +349,17 @@ class Game {
                 let index = availableLetters.indexOf(letters[i]);
 
                 index = index > -1 ? index : availableLetters.indexOf("*");
+                usedLetters.push(availableLetters[index]);
                 availableLetters.splice(index, 1);
             }
         }
-        return true;
+        return usedLetters;
     }
     setUpLetterBag() {
         let lettersPerHand = this.settings.lettersPerHand;
         let letterBag = document.getElementById("letterBag");
+
+        this.currentLetterSelection = [];
 
         while (letterBag.firstChild) {
             letterBag.removeChild(letterBag.firstChild);
