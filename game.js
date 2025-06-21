@@ -438,7 +438,6 @@ TO DO
 - Display round goal, hands, discards
 - Upgrade menu and effects
 - Restart mechanic
-- Check for wildcards (currently removed from bag)
 - View which letters are upgraded
 - View entire letter bag
 */
